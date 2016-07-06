@@ -10,10 +10,11 @@ class CartItem(object):
     """
     A cart item, with the associated product, its quantity and its price.
     """
-    def __init__(self, product, quantity, price):
+    def __init__(self, product, quantity, price, attributes):
         self.product = product
         self.quantity = int(quantity)
         self.price = Decimal(str(price))
+        self.attributes = attributes
 
     def __repr__(self):
         return u'CartItem Object (%s)' % self.product
@@ -23,6 +24,7 @@ class CartItem(object):
             'product_pk': self.product.pk,
             'quantity': self.quantity,
             'price': str(self.price),
+            'Fuck': self.attributes,
         }
 
     @property
@@ -50,8 +52,10 @@ class Cart(object):
             products_queryset = self.get_queryset().filter(pk__in=ids_in_cart)
             for product in products_queryset:
                 item = cart_representation[str(product.pk)]
+                if 'attributes' not in item:
+                    item['attributes'] = None
                 self._items_dict[product.pk] = CartItem(
-                    product, item['quantity'], Decimal(item['price'])
+                    product, item['quantity'], Decimal(item['price']), item['attributes']
                 )
 
     def __contains__(self, product):
@@ -85,7 +89,7 @@ class Cart(object):
         self.session[self.session_key] = self.cart_serializable
         self.session.modified = True
 
-    def add(self, product, price=None, quantity=1):
+    def add(self, product, price=None, quantity=1, attributes={}):
         """
         Adds or creates products in cart. For an existing product,
         the quantity is increased and the price is ignored.
@@ -98,7 +102,7 @@ class Cart(object):
         else:
             if price == None:
                 raise ValueError('Missing price when adding to cart')
-            self._items_dict[product.pk] = CartItem(product, quantity, price)
+            self._items_dict[product.pk] = CartItem(product, quantity, price, attributes)
         self.update_session()
 
     def remove(self, product):
